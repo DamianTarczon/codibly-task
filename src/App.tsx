@@ -1,7 +1,7 @@
 
 function App() {
   return (
-    <div>
+    <div className="flex justify-center">
         cos
     </div>
   );
