@@ -96,7 +96,7 @@ function Products() {
             fetchProducts(pageFromUrl + 1);
             setPage(pageFromUrl);
         }
-    }, [location.search, fetchProducts, fetchProductsById]);
+    }, [location.search, fetchProducts, fetchProductsById, page]);
 
     useEffect(() => {
         if (searchId) {
