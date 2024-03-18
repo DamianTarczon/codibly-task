@@ -16,6 +16,10 @@ import apiUrl from "../api/apiUrl";
 import { NavigateFunction, useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 
+const useQuery = (): URLSearchParams => {
+    return new URLSearchParams(useLocation().search);
+}
+
 function Products() {
     const navigate: NavigateFunction = useNavigate();
     const [products, setProducts] = useState<Product[]>([]);
@@ -25,11 +29,7 @@ function Products() {
     const [rowsPerPage, setRowsPerPage] = useState<number>(6);
     const [totalPages, setTotalPages] = useState<number>(0);
     const [searchId, setSearchId] = useState<string>('');
-
-    const useQuery = (): URLSearchParams => {
-        return new URLSearchParams(useLocation().search);
-    }
-
+    const [message, setMessage] = useState<string | null>(null);
     const query: URLSearchParams = useQuery();
     const location = useLocation();
 
@@ -37,14 +37,26 @@ function Products() {
         try {
             const response = await fetch(`${apiUrl}?page=${pageToFetch}`);
             if (!response.ok) {
-                throw new Error("Something went wrong");
+                if (response.status >= 400 && response.status < 500) {
+                    setMessage("Sorry, we couldn't find the products you were looking for.");
+                } else if (response.status >= 500) {
+                    setMessage("Sorry, there's a problem with our server. Please try again later.");
+                }
+                setProducts([]);
+                return;
             }
             const data = await response.json();
-            setProducts(data.data);
-            setRowsPerPage(data.per_page);
-            setTotalPages(data.total);
+            if (!data.data || (Array.isArray(data.data) && data.data.length === 0) ) {
+                setMessage('No products found.')
+                setProducts([])
+            } else {
+                setProducts(data.data);
+                setRowsPerPage(data.per_page);
+                setTotalPages(data.total);
+            }
         } catch (error) {
             console.error("Failed to fetch products:", error);
+            setMessage("An unexpected error occurred. Please try again.");
         }
     }, []);
 
@@ -52,21 +64,39 @@ function Products() {
         try {
             const response = await fetch(`${apiUrl}?id=${id}`);
             if (!response.ok) {
-                throw new Error("Something went wrong");
+                if (response.status >= 400 && response.status < 500) {
+                    setMessage("Sorry, we couldn't find the product with that id.");
+                } else if (response.status >= 500) {
+                    setMessage("Sorry, there's a problem with our server. Please try again later.");
+                }
+                setProducts([]);
+                return;
             }
             const data = await response.json();
-            setProducts(Array.isArray(data.data) ? data.data : [data.data]);
+            if (!data.data || (Array.isArray(data.data) && data.data.length === 0)) {
+                setMessage("No products found with that ID.");
+            } else {
+                setProducts(Array.isArray(data.data) ? data.data : [data.data]);
+                setMessage(null);
+            }
         } catch (error) {
             console.error("Failed to fetch product by ID:", error);
+            setMessage("An unexpected error occurred. Please try again.");
         }
     }, []);
 
     useEffect(() => {
         const pageParam: string|null = query.get("page");
-        const pageFromUrl: number = pageParam ? parseInt(pageParam, 10) - 1 : page;
-        fetchProducts(pageFromUrl + 1);
-        setPage(pageFromUrl);
-    }, [location.search, fetchProducts]);
+        const idParam = query.get("id");
+        if (idParam) {
+            fetchProductsById(idParam);
+            setSearchId(idParam)
+        } else {
+            const pageFromUrl: number = pageParam ? parseInt(pageParam, 10) - 1 : page;
+            fetchProducts(pageFromUrl + 1);
+            setPage(pageFromUrl);
+        }
+    }, [location.search, fetchProducts, fetchProductsById]);
 
     useEffect(() => {
         if (searchId) {
@@ -100,21 +130,25 @@ function Products() {
         }
     };
 
-
     const isPageInRange = page >= 0 && page < Math.ceil(totalPages / rowsPerPage);
 
     return (
         <>
-            <div className="flex flex-col mb-12"> {/* Add some margin-bottom for spacing */}
+            <div className="flex flex-col mb-12">
                 <label htmlFor="searchId">Search by ID:</label>
                 <input
                     type="number"
                     id="searchId"
                     value={searchId}
                     onChange={handleSearchChange}
-                    className="border border-gray-400 rounded-md px-3 py-1.5 w-full max-w-44 focus:outline-none" // Add some basic styling
+                    className="border border-gray-400 rounded-md px-3 py-1.5 w-full max-w-44 focus:outline-none"
                 />
             </div>
+            {message && (
+                <div className="text-center my-4 p-2 bg-red-100 text-red-700 rounded">
+                    {message}
+                </div>
+            )}
             <TableContainer component={Paper}>
                 <Table>
                     <TableHead>
