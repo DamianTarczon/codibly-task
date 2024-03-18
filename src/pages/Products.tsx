@@ -87,7 +87,7 @@ function Products() {
 
     useEffect(() => {
         const pageParam: string|null = query.get("page");
-        const idParam = query.get("id");
+        const idParam: string|null = query.get("id");
         if (idParam) {
             fetchProductsById(idParam);
             setSearchId(idParam)
