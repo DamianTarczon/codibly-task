@@ -24,7 +24,7 @@ function Header() {
                     <li>
                         <NavLink 
                             to="/"
-                            className={({isActive}) => `${isActive ? 'text-blue-400': ''} text-lg` }
+                            className={({isActive}) => `${isActive ? 'text-blue-400': ''} text-lg hover:text-blue-500 animation-300` }
                         >
                             Homepage
                         </NavLink>
@@ -32,7 +32,7 @@ function Header() {
                     <li>
                         <NavLink 
                             to="/products"
-                            className={({isActive}) => `${isActive ? 'text-blue-400': ''} text-lg` }
+                            className={({isActive}) => `${isActive ? 'text-blue-400': ''} text-lg hover:text-blue-500 animation-300` }
                         >
                             Products
                         </NavLink>
@@ -59,7 +59,7 @@ function Header() {
                     <li onClick={toggleDrawer(false)}>
                         <NavLink 
                             to="/"
-                            className={({isActive}) => `${isActive ? 'text-blue-400': ''} text-xl`}
+                            className={({isActive}) => `${isActive ? 'text-blue-400': ''} text-xl hover:text-blue-500 animation-300`}
                         >
                             Homepage
                         </NavLink>
@@ -67,7 +67,7 @@ function Header() {
                     <li onClick={toggleDrawer(false)}>
                         <NavLink 
                             to="/products"
-                            className={({isActive}) => `${isActive ? 'text-blue-400': ''} text-xl` }
+                            className={({isActive}) => `${isActive ? 'text-blue-400': ''} text-xl hover:text-blue-500 animation-300` }
                         >
                             Products
                         </NavLink>
