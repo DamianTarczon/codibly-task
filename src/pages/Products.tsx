@@ -96,6 +96,7 @@ function Products() {
             fetchProducts(pageFromUrl + 1);
             setPage(pageFromUrl);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [location.search, fetchProducts, fetchProductsById, page]);
 
     useEffect(() => {
