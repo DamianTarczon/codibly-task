@@ -99,7 +99,7 @@ function Products() {
 
     const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const id: string = event.target.value;
-        setSearchId(id)
+        if(parseInt(id) >= 0 || id === '') setSearchId(id)
     };
 
     const debouncedNavigateForSearch = useDebouncedCallback((id) => {
@@ -123,6 +123,7 @@ function Products() {
                 <input
                     type="number"
                     id="searchId"
+                    min={0}
                     value={searchId}
                     onChange={handleSearchChange}
                     className="border border-gray-400 rounded-md px-3 py-1.5 w-full max-w-44 focus:outline-none"
