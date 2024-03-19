@@ -1,22 +1,13 @@
 import { useEffect, useState, useCallback } from "react";
 import Product from '../types/productType';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import Paper from '@mui/material/Paper';
-import Modal from '@mui/material/Modal';
-import Box from '@mui/material/Box';
-import IconButton from '@mui/material/IconButton';
-import CloseIcon from '@mui/icons-material/Close';
-import TablePagination from '@mui/material/TablePagination';
 import apiUrl from "../api/apiUrl";
 import { NavigateFunction, useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import { useDebouncedCallback } from 'use-debounce';
-import CircularProgress from '@mui/material/CircularProgress';
+import ProductsTable from "../components/ProductsTable";
+import ErrorMessage from "../components/ErrorMessage";
+import ProductModal from "../components/ProductModal";
+import SearchInput from "../components/SearchInput";
 
 const useQuery = (): URLSearchParams => {
     return new URLSearchParams(useLocation().search);
@@ -52,8 +43,8 @@ function Products() {
         try {
             const response = await fetch(`${apiUrl}${queryString}`);
             if (!response.ok) {
-                if (response.status >= 400 && response.status < 500) {
-                    setMessage(isById ? "Sorry, we couldn't find the product with that id." : "Sorry, we couldn't find the products you were looking for.");
+                if (response.status === 404) {
+                    setMessage("Sorry, we couldn't find the product with that id.");
                 } else if (response.status >= 500) {
                     setMessage("Sorry, there's a problem with our server. Please try again later.");
                 }
@@ -61,8 +52,8 @@ function Products() {
                 return;
             }
             const data = await response.json();
-            if (!data.data || (Array.isArray(data.data) && data.data.length === 0) ) {
-                setMessage(isById ? "No products found with that ID." : "No products found.");
+            if (!data.data || (data?.data?.length === 0) ) {
+                setMessage("No products found.");
                 setProducts([]);
             } else {
                 setProducts(Array.isArray(data.data) ? data.data : [data.data]);
@@ -70,7 +61,6 @@ function Products() {
                 setMessage(null);
             }
         } catch (error) {
-            console.error("Failed to fetch products:", error);
             setMessage("An unexpected error occurred. Please try again.");
         } finally {
             setIsLoading(false);
@@ -105,7 +95,10 @@ function Products() {
 
     const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const id: string = event.target.value;
-        if(parseInt(id) >= 0 || id === '') setSearchId(id)
+        if(parseInt(id) >= 0 || id === '') {
+            setSearchId(id)
+            debouncedNavigateForSearch(id);
+        }
     };
 
     const debouncedNavigateForSearch = useDebouncedCallback((id: string) => {
@@ -118,93 +111,30 @@ function Products() {
         }
     }, 500);
 
-    useEffect(() => {
-        debouncedNavigateForSearch(searchId);
-    }, [searchId, debouncedNavigateForSearch]);
-
     return (
         <>
-            <div className="flex flex-col mb-12">
-                <label htmlFor="searchId">Search by ID:</label>
-                <input
-                    type="number"
-                    id="searchId"
-                    min={0}
-                    value={searchId}
-                    onChange={handleSearchChange}
-                    className="border border-gray-400 rounded-md px-3 py-1.5 w-full max-w-44 focus:outline-none"
-                />
-            </div>
-            {message && (
-                <div className="text-center my-4 p-2 bg-red-100 text-red-700 rounded">
-                    {message}
-                </div>
-            )}
-            <div className="relative">
-                <TableContainer component={Paper}>
-                    <Table>
-                        <TableHead>
-                        <TableRow>
-                            <TableCell align="center">ID</TableCell>
-                            <TableCell align="center">Name</TableCell>
-                            <TableCell align="center">Year</TableCell>
-                        </TableRow>
-                        </TableHead>
-                        <TableBody>
-                        {products.map((product) => (
-                            <TableRow
-                                key={product.id}
-                                sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                                className="cursor-pointer"
-                                style={{ backgroundColor: product.color }}
-                                onClick={() => handleOpen(product)}
-                            >
-                            <TableCell align="center">{product.id}</TableCell>
-                            <TableCell align="center">{product.name}</TableCell>
-                            <TableCell align="center">{product.year}</TableCell>
-                            </TableRow>
-                        ))}
-                        </TableBody>
-                    </Table>
-                    {searchId === '' && isPageInRange && (
-                        <TablePagination
-                            component="div"
-                            count={totalPages}
-                            rowsPerPage={rowsPerPage}
-                            page={page}
-                            onPageChange={handleChangePage}
-                            rowsPerPageOptions={[]}
-                        />
-                    )}
-                </TableContainer>
-                {isLoading && (
-                    <div className="flex justify-center items-center absolute inset-0 bg-black/40">
-                        <CircularProgress />
-                    </div>
-                )}
-            </div>
-
-            <Modal
+            <SearchInput
+                searchId={searchId}
+                handleSearchChange={handleSearchChange}
+            />
+            { message && <ErrorMessage message={message} /> }
+            <ProductsTable 
+                products={products}
+                handleOpen={handleOpen}
+                searchId={searchId}
+                isPageInRange={isPageInRange}
+                totalPages={totalPages}
+                rowsPerPage={rowsPerPage}
+                page={page}
+                handleChangePage={handleChangePage}
+                isLoading={isLoading}
+            />
+            <ProductModal
                 open={open}
-                onClose={handleClose}
-            >
-                <Box className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 min-w-72 sm:min-w-80 bg-white rounded-md p-5 pt-2 focus:outline-none flex flex-col" >
-                    <div className="flex justify-end">
-                        <IconButton className="text-end w-fit" onClick={() => setOpen(false)}>
-                            <CloseIcon />
-                        </IconButton>
-                    </div>
-                    {selectedProduct && (
-                        <div>
-                            <h2 className="text-xl font-semibold text-center">{selectedProduct.name}</h2>
-                            <p>ID: {selectedProduct.id}</p>
-                            <p>Year: {selectedProduct.year}</p>
-                            <p>Color: <span style={{color: selectedProduct.color}}>{selectedProduct.color}</span></p>
-                            <p>Pantone: {selectedProduct.pantone_value}</p>
-                        </div>
-                    )}
-                </Box>
-            </Modal>
+                handleClose={handleClose}
+                setOpen={setOpen}
+                selectedProduct={selectedProduct}
+            />
         </>
     );
 }
