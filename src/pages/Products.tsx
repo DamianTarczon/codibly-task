@@ -32,13 +32,22 @@ function Products() {
     const [message, setMessage] = useState<string | null>(null);
     const query: URLSearchParams = useQuery();
     const location = useLocation();
+    
+    const fetchProducts = useCallback(async (param: number | string, isById: boolean = false) => {
+        let queryString: string = '';
 
-    const fetchProducts = useCallback(async (pageToFetch: number) => {
+        if (isById) {
+            queryString = `?id=${param}`;
+            setSearchId(param as string);
+        } else {
+            queryString = `?page=${param}`;
+        }
+
         try {
-            const response = await fetch(`${apiUrl}?page=${pageToFetch}`);
+            const response = await fetch(`${apiUrl}${queryString}`);
             if (!response.ok) {
                 if (response.status >= 400 && response.status < 500) {
-                    setMessage("Sorry, we couldn't find the products you were looking for.");
+                    setMessage(isById ? "Sorry, we couldn't find the product with that id." : "Sorry, we couldn't find the products you were looking for.");
                 } else if (response.status >= 500) {
                     setMessage("Sorry, there's a problem with our server. Please try again later.");
                 }
@@ -47,12 +56,13 @@ function Products() {
             }
             const data = await response.json();
             if (!data.data || (Array.isArray(data.data) && data.data.length === 0) ) {
-                setMessage('No products found.')
+                setMessage(isById ? "No products found with that ID." : "No products found.")
                 setProducts([])
             } else {
-                setProducts(data.data);
+                setProducts(Array.isArray(data.data) ? data.data : [data.data]);
                 setRowsPerPage(data.per_page);
                 setTotalPages(data.total);
+                setMessage(null);
             }
         } catch (error) {
             console.error("Failed to fetch products:", error);
@@ -60,52 +70,18 @@ function Products() {
         }
     }, []);
 
-    const fetchProductsById = useCallback(async (id: string) => {
-        try {
-            const response = await fetch(`${apiUrl}?id=${id}`);
-            if (!response.ok) {
-                if (response.status >= 400 && response.status < 500) {
-                    setMessage("Sorry, we couldn't find the product with that id.");
-                } else if (response.status >= 500) {
-                    setMessage("Sorry, there's a problem with our server. Please try again later.");
-                }
-                setProducts([]);
-                return;
-            }
-            const data = await response.json();
-            if (!data.data || (Array.isArray(data.data) && data.data.length === 0)) {
-                setMessage("No products found with that ID.");
-            } else {
-                setProducts(Array.isArray(data.data) ? data.data : [data.data]);
-                setMessage(null);
-            }
-        } catch (error) {
-            console.error("Failed to fetch product by ID:", error);
-            setMessage("An unexpected error occurred. Please try again.");
-        }
-    }, []);
-
     useEffect(() => {
-        const pageParam: string|null = query.get("page");
-        const idParam: string|null = query.get("id");
+        const pageParam = query.get("page");
+        const idParam = query.get("id");
+    
         if (idParam) {
-            fetchProductsById(idParam);
-            setSearchId(idParam)
+            fetchProducts(idParam, true);
+        } else if (pageParam) {
+            fetchProducts(parseInt(pageParam, 10));
         } else {
-            const pageFromUrl: number = pageParam ? parseInt(pageParam, 10) - 1 : page;
-            fetchProducts(pageFromUrl + 1);
-            setPage(pageFromUrl);
+            fetchProducts(1);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [location.search, fetchProducts, fetchProductsById, page]);
-
-    useEffect(() => {
-        if (searchId) {
-            fetchProductsById(searchId);
-        } else {
-            fetchProducts(page + 1);
-        }
-    }, [searchId, fetchProducts, fetchProductsById, page]);
+    }, [location.search]);
 
     const handleOpen = (product: Product) => {
         setSelectedProduct(product);
@@ -121,7 +97,7 @@ function Products() {
 
     const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const id: string = event.target.value;
-        setSearchId(id);
+        setSearchId(id)
         if(id) {
             navigate(`?id=${id}`);
         } else if (page > 0) {
