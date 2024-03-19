@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import Product from '../types/productType'
+import Product from '../types/productType';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -30,22 +30,23 @@ function Products() {
     const [open, setOpen] = useState<boolean>(false);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [page, setPage] = useState<number>(0);
-    const [rowsPerPage, setRowsPerPage] = useState<number>(6);
     const [totalPages, setTotalPages] = useState<number>(0);
     const [searchId, setSearchId] = useState<string>('');
     const [message, setMessage] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
+    const rowsPerPage: number = 5;
     const isPageInRange: boolean = page >= 0 && page < Math.ceil(totalPages / rowsPerPage);
     
     const fetchProducts = useCallback(async (param: number | string, isById: boolean = false) => {
         setIsLoading(true);
-        let queryString: string = '';
+        let queryString: string = `?per_page=${rowsPerPage}`;
 
         if (isById) {
-            queryString = `?id=${param}`;
+            queryString += `&id=${param}`;
             setSearchId(param as string);
         } else {
-            queryString = `?page=${param}`;
+            queryString += `&page=${param}`;
+            setPage(parseInt(param as string) -1)
         }
 
         try {
@@ -61,11 +62,10 @@ function Products() {
             }
             const data = await response.json();
             if (!data.data || (Array.isArray(data.data) && data.data.length === 0) ) {
-                setMessage(isById ? "No products found with that ID." : "No products found.")
-                setProducts([])
+                setMessage(isById ? "No products found with that ID." : "No products found.");
+                setProducts([]);
             } else {
                 setProducts(Array.isArray(data.data) ? data.data : [data.data]);
-                setRowsPerPage(data.per_page);
                 setTotalPages(data.total);
                 setMessage(null);
             }
@@ -80,7 +80,7 @@ function Products() {
     useEffect(() => {
         const pageParam = query.get("page");
         const idParam = query.get("id");
-    
+
         if (idParam) {
             fetchProducts(idParam, true);
         } else if (pageParam) {
