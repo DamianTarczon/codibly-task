@@ -88,6 +88,7 @@ function Products() {
         } else {
             fetchProducts(1);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [location.search]);
 
     const handleOpen = (product: Product) => {
