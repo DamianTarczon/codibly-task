@@ -15,6 +15,7 @@ import TablePagination from '@mui/material/TablePagination';
 import apiUrl from "../api/apiUrl";
 import { NavigateFunction, useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
+import { useDebouncedCallback } from 'use-debounce';
 
 const useQuery = (): URLSearchParams => {
     return new URLSearchParams(useLocation().search);
@@ -32,6 +33,7 @@ function Products() {
     const [message, setMessage] = useState<string | null>(null);
     const query: URLSearchParams = useQuery();
     const location = useLocation();
+    const isPageInRange = page >= 0 && page < Math.ceil(totalPages / rowsPerPage);
     
     const fetchProducts = useCallback(async (param: number | string, isById: boolean = false) => {
         let queryString: string = '';
@@ -98,6 +100,9 @@ function Products() {
     const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const id: string = event.target.value;
         setSearchId(id)
+    };
+
+    const debouncedNavigateForSearch = useDebouncedCallback((id) => {
         if(id) {
             navigate(`?id=${id}`);
         } else if (page > 0) {
@@ -105,9 +110,11 @@ function Products() {
         } else {
             navigate('');
         }
-    };
+    }, 500);
 
-    const isPageInRange = page >= 0 && page < Math.ceil(totalPages / rowsPerPage);
+    useEffect(() => {
+        debouncedNavigateForSearch(searchId);
+    }, [searchId, debouncedNavigateForSearch]);
 
     return (
         <>
