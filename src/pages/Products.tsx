@@ -16,6 +16,7 @@ import apiUrl from "../api/apiUrl";
 import { NavigateFunction, useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import { useDebouncedCallback } from 'use-debounce';
+import CircularProgress from '@mui/material/CircularProgress';
 
 const useQuery = (): URLSearchParams => {
     return new URLSearchParams(useLocation().search);
@@ -23,6 +24,8 @@ const useQuery = (): URLSearchParams => {
 
 function Products() {
     const navigate: NavigateFunction = useNavigate();
+    const query: URLSearchParams = useQuery();
+    const location = useLocation();
     const [products, setProducts] = useState<Product[]>([]);
     const [open, setOpen] = useState<boolean>(false);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -31,11 +34,11 @@ function Products() {
     const [totalPages, setTotalPages] = useState<number>(0);
     const [searchId, setSearchId] = useState<string>('');
     const [message, setMessage] = useState<string | null>(null);
-    const query: URLSearchParams = useQuery();
-    const location = useLocation();
+    const [isLoading, setIsLoading] = useState<boolean>(false);
     const isPageInRange: boolean = page >= 0 && page < Math.ceil(totalPages / rowsPerPage);
     
     const fetchProducts = useCallback(async (param: number | string, isById: boolean = false) => {
+        setIsLoading(true);
         let queryString: string = '';
 
         if (isById) {
@@ -69,6 +72,8 @@ function Products() {
         } catch (error) {
             console.error("Failed to fetch products:", error);
             setMessage("An unexpected error occurred. Please try again.");
+        } finally {
+            setIsLoading(false);
         }
     }, []);
 
@@ -134,42 +139,49 @@ function Products() {
                     {message}
                 </div>
             )}
-            <TableContainer component={Paper}>
-                <Table>
-                    <TableHead>
-                    <TableRow>
-                        <TableCell align="center">ID</TableCell>
-                        <TableCell align="center">Name</TableCell>
-                        <TableCell align="center">Year</TableCell>
-                    </TableRow>
-                    </TableHead>
-                    <TableBody>
-                    {products.map((product) => (
-                        <TableRow
-                            key={product.id}
-                            sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                            className="cursor-pointer"
-                            style={{ backgroundColor: product.color }}
-                            onClick={() => handleOpen(product)}
-                        >
-                        <TableCell align="center">{product.id}</TableCell>
-                        <TableCell align="center">{product.name}</TableCell>
-                        <TableCell align="center">{product.year}</TableCell>
+            <div className="relative">
+                <TableContainer component={Paper}>
+                    <Table>
+                        <TableHead>
+                        <TableRow>
+                            <TableCell align="center">ID</TableCell>
+                            <TableCell align="center">Name</TableCell>
+                            <TableCell align="center">Year</TableCell>
                         </TableRow>
-                    ))}
-                    </TableBody>
-                </Table>
-                {searchId === '' && isPageInRange && (
-                    <TablePagination
-                        component="div"
-                        count={totalPages}
-                        rowsPerPage={rowsPerPage}
-                        page={page}
-                        onPageChange={handleChangePage}
-                        rowsPerPageOptions={[]}
-                    />
+                        </TableHead>
+                        <TableBody>
+                        {products.map((product) => (
+                            <TableRow
+                                key={product.id}
+                                sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                                className="cursor-pointer"
+                                style={{ backgroundColor: product.color }}
+                                onClick={() => handleOpen(product)}
+                            >
+                            <TableCell align="center">{product.id}</TableCell>
+                            <TableCell align="center">{product.name}</TableCell>
+                            <TableCell align="center">{product.year}</TableCell>
+                            </TableRow>
+                        ))}
+                        </TableBody>
+                    </Table>
+                    {searchId === '' && isPageInRange && (
+                        <TablePagination
+                            component="div"
+                            count={totalPages}
+                            rowsPerPage={rowsPerPage}
+                            page={page}
+                            onPageChange={handleChangePage}
+                            rowsPerPageOptions={[]}
+                        />
+                    )}
+                </TableContainer>
+                {isLoading && (
+                    <div className="flex justify-center items-center absolute inset-0 bg-black/40">
+                        <CircularProgress />
+                    </div>
                 )}
-            </TableContainer>
+            </div>
 
             <Modal
                 open={open}
