@@ -33,7 +33,7 @@ function Products() {
     const [message, setMessage] = useState<string | null>(null);
     const query: URLSearchParams = useQuery();
     const location = useLocation();
-    const isPageInRange = page >= 0 && page < Math.ceil(totalPages / rowsPerPage);
+    const isPageInRange: boolean = page >= 0 && page < Math.ceil(totalPages / rowsPerPage);
     
     const fetchProducts = useCallback(async (param: number | string, isById: boolean = false) => {
         let queryString: string = '';
@@ -102,7 +102,7 @@ function Products() {
         if(parseInt(id) >= 0 || id === '') setSearchId(id)
     };
 
-    const debouncedNavigateForSearch = useDebouncedCallback((id) => {
+    const debouncedNavigateForSearch = useDebouncedCallback((id: string) => {
         if(id) {
             navigate(`?id=${id}`);
         } else if (page > 0) {
